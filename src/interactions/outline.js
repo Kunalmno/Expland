@@ -25,7 +25,7 @@ export default class OutlineManager {
     }
     try {
       const closetZones = this.closetManager.createClosetZonesFromMap();
-      console.log("[OutlineManager] closetZones:", closetZones);
+
       if (!closetZones || closetZones.length === 0) {
         console.warn("[OutlineManager] No closet zones initialized.");
         return;

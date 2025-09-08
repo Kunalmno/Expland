@@ -30,18 +30,20 @@ export default class Collision {
     }
 
     collisionLayer.objects.forEach((obj, index) => {
-      if (!obj || !obj.x || !obj.y || !obj.width || !obj.height) {
-        console.warn(
-          `[Collision] Invalid object at index ${index} in Collision layer.`
-        );
+      if (!obj || obj.width <= 0 || obj.height <= 0) {
+        console.warn(`[Collision] Invalid object at index ${index}`, obj);
         return;
       }
 
       const { x, y, width, height } = obj;
 
+      // Fix y-origin mismatch from Tiled (shift to center)
+      const centerX = x + width / 2;
+      const centerY = y - height / 2;
+
       const collider = this.scene.add.rectangle(
-        x + width / 2,
-        y + height / 2,
+        centerX,
+        centerY,
         width,
         height,
         0x0000ff,
@@ -56,8 +58,12 @@ export default class Collision {
       }
 
       try {
-        this.scene.physics.add.existing(collider, true); // Static physics body
-        this.collisionGroup.add(collider);
+        this.scene.physics.add.existing(collider, true); // static body
+        if (collider.body) {
+          this.collisionGroup.add(collider);
+        } else {
+          console.warn("[Collision] Collider has no physics body:", collider);
+        }
       } catch (error) {
         console.error(
           `[Collision] Failed to add physics to collider at (${x}, ${y}):`,
@@ -76,10 +82,13 @@ export default class Collision {
       console.error("[Collision] collisionGroup is not initialized.");
       return;
     }
-    if (!target || !target.body) {
+
+    // Ensure target is a valid Arcade body
+    if (!(target instanceof Phaser.Physics.Arcade.Sprite) || !target.body) {
       console.error("[Collision] Invalid target for collider:", target);
       return;
     }
+
     if (this.collisionGroup.getLength() === 0) {
       console.warn("[Collision] collisionGroup is empty; no colliders to add.");
       return;

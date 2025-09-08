@@ -62,7 +62,6 @@ export default class MapManager {
     this._tileUpdater.start();
 
     const closetLayer = this.map.getObjectLayer(LAYERS.INTERACTION);
-    console.log("[MapManager] closetLayer data:", closetLayer);
     if (!closetLayer) {
       console.warn(
         "[MapManager] Object layer 'close' not found in map. Ensure the Tiled map has an object layer named 'close'."
@@ -122,6 +121,22 @@ export default class MapManager {
       );
       return;
     }
+
+    // Validate physics body
+    if (!(player instanceof Phaser.Physics.Arcade.Sprite)) {
+      console.error(
+        "[MapManager] Player is not a valid Arcade.Sprite. Collision skipped."
+      );
+      return;
+    }
+    if (!player.body) {
+      console.error(
+        "[MapManager] Player has no physics body. Collision skipped."
+      );
+      return;
+    }
+
+    // Lazy-init Collision manager
     if (!this._collisionManager) {
       this._collisionManager = new Collision(this.scene, this.map, opts.debug);
     }
@@ -129,6 +144,7 @@ export default class MapManager {
       console.error("[MapManager] addCollider is not a function on Collision.");
       return;
     }
+
     try {
       return this._collisionManager.addCollider(player);
     } catch (error) {

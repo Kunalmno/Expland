@@ -32,7 +32,6 @@ export default class ClosetObjectManager {
   setupClosets() {
     const closetLayer =
       this.scene.closetLayer || this.scene.map?.getObjectLayer(ClosetObjLayer);
-    console.log("[ClosetObjectManager] closetLayer:", closetLayer);
 
     if (!closetLayer || !closetLayer.objects) {
       console.warn(ClosetObjectWarning);
@@ -59,33 +58,23 @@ export default class ClosetObjectManager {
         const x = obj.x + OUTLINE_CONFIG.Xposition;
         const y = obj.y + OUTLINE_CONFIG.yposition;
 
-        const zone = this.scene.add.zone(x, y, width, height);
-        try {
-          this.scene.physics.add.existing(zone, true); // Static physics body
-        } catch (error) {
-          console.error(
-            `[ClosetObjectManager] Failed to add physics to zone at (${x}, ${y}):`,
-            error
-          );
-          return null;
-        }
+        // 🔹 Create a StaticImage for the zone
+        const zone = this.scene.physics.add
+          .staticImage(x, y, ClosetImage)
+          .setOrigin(OutlineOrigin)
+          .setScale(OutlineScale)
+          .setDisplaySize(width + 2.5, height + 2.5)
+          .setVisible(OutlineVisibility);
 
-        let outline;
-        try {
-          outline = this.scene.add
-            .image(x, y, ClosetImage)
-            .setOrigin(OutlineOrigin)
-            .setScale(OutlineScale)
-            .setDisplaySize(width + 2.5, height + 2.5)
-            .setVisible(OutlineVisibility);
-        } catch (error) {
-          console.error(
-            `[ClosetObjectManager] Failed to create outline for closet at (${x}, ${y}):`,
-            error
-          );
-          return null;
-        }
+        // 🔹 Create the outline
+        const outline = this.scene.add
+          .image(x, y, ClosetImage)
+          .setOrigin(OutlineOrigin)
+          .setScale(OutlineScale)
+          .setDisplaySize(width + 2.5, height + 2.5)
+          .setVisible(OutlineVisibility);
 
+        // 🔹 Create interaction text
         const interactionText = this.scene.add
           .bitmapText(x, y - 12, TextName, TextDisplay, TextSize)
           .setOrigin(TextOrigin)
@@ -101,20 +90,19 @@ export default class ClosetObjectManager {
           playerInZone: false,
         };
       })
-      .filter((zone) => zone !== null && zone.zone && zone.zone.body);
+      .filter((z) => z !== null && z.zone && z.zone.body);
 
     if (this.closetZones.length === 0) {
       console.warn(ClosetUnlockWarning);
       return;
     }
 
+    // ✅ FIX: Register overlap using individual zones
     if (this.scene.player && this.scene.player.body) {
-      try {
+      this.closetZones.forEach((z) => {
         this.scene.physics.add.overlap(
           this.scene.player,
-          this.closetZones
-            .map((z) => z.zone)
-            .filter((zone) => zone && zone.body),
+          z.zone,
           (player, zone) => {
             const closetZone = this.closetZones.find((z) => z.zone === zone);
             if (closetZone) {
@@ -126,23 +114,13 @@ export default class ClosetObjectManager {
           null,
           this
         );
-        console.log(
-          "[ClosetObjectManager] closetGroup children:",
-          this.closetGroup.getChildren()
-        );
-      } catch (error) {
-        console.error("[ClosetObjectManager] Failed to setup overlap:", error);
-      }
+      });
     } else {
       console.warn("[ClosetObjectManager] Player not ready for overlap setup.");
     }
   }
 
   createClosetZonesFromMap() {
-    console.log(
-      "[ClosetObjectManager] Returning closetZones:",
-      this.closetZones
-    );
     return this.closetZones;
   }
 
@@ -166,9 +144,6 @@ export default class ClosetObjectManager {
       zone.playerInZone = distance <= range;
       zone.outline.setVisible(zone.playerInZone);
       zone.interactionText.setVisible(zone.playerInZone);
-      console.log(
-        `[ClosetObjectManager] Distance to closet at (${zone.position.x}, ${zone.position.y}): ${distance}, in range: ${zone.playerInZone}`
-      );
     });
   }
 }

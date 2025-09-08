@@ -36,9 +36,6 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.on("filecomplete", (key) => {
-      console.log(`[GameScene] Loaded asset: ${key}`);
-    });
     this.load.on("loaderror", (file) => {
       console.error(
         `[GameScene] Failed to load asset: ${file.key}, src: ${file.src}`
@@ -112,7 +109,7 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
     const mapData = this.mapManager.create();
-    console.log("[GameScene] MapManager.create() returned:", mapData);
+
     const { map, closetLayer } = mapData;
     if (!map) {
       console.error("[GameScene] Map is undefined.");
@@ -135,7 +132,7 @@ export default class GameScene extends Phaser.Scene {
       if (!this.player || !this.player.body || !this.player.active) {
         throw new Error("Player initialization failed or lacks physics body.");
       }
-      console.log("[GameScene] Player initialized:", this.player);
+
       this.events.emit("playerInit", this.player);
     } catch (error) {
       console.error("[GameScene] Error in _setupPlayer:", error);
@@ -181,8 +178,16 @@ export default class GameScene extends Phaser.Scene {
       );
       return;
     }
+
     try {
-      this.mapManager.enableCollisionsFor(this.player, { debug: false });
+      // Ensure only valid Arcade body objects are passed
+      if (this.player instanceof Phaser.Physics.Arcade.Sprite) {
+        this.mapManager.enableCollisionsFor(this.player, { debug: false });
+      } else {
+        console.warn(
+          "[GameScene] Player is not a Phaser.Physics.Arcade.Sprite. Skipping collision setup."
+        );
+      }
     } catch (error) {
       console.error("[GameScene] Error in _setupCollisions:", error);
     }
